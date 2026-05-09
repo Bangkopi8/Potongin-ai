@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "vitest run --pool=threads"
+    "test": "vitest run --config vitest.config.js"
   },
   "keywords": [
     "express",

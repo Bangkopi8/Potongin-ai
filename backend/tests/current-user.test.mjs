@@ -87,7 +87,7 @@ describe('current user auth boundary', () => {
     );
   });
 
-  it('keeps Supabase auth as a TODO stub when USE_SUPABASE=true', async () => {
+  it('attaches mock currentUser even when USE_SUPABASE=true (auth TODO)', async () => {
     await withEnv(
       {
         USE_SUPABASE: 'true',
@@ -109,10 +109,14 @@ describe('current user auth boundary', () => {
 
         expect(response.status).toBe(200);
         expect(response.body).toEqual({
-          currentUser: null,
+          currentUser: {
+            id: 'mock-user-001',
+            email: 'demo@potongin.ai',
+            role: 'regular',
+          },
           authBoundary: {
-            mode: 'supabase-todo',
-            isAuthenticated: false,
+            mode: 'mock',
+            isAuthenticated: true,
           },
         });
       }
@@ -467,7 +471,7 @@ describe('current user auth boundary', () => {
     );
   });
 
-  it('returns UNAUTHENTICATED for user-context routes when currentUser is missing', async () => {
+  it('serves user-context routes with mock auth when USE_SUPABASE=true (auth TODO)', async () => {
     await withEnv(
       {
         USE_SUPABASE: 'true',
@@ -485,23 +489,11 @@ describe('current user auth boundary', () => {
             notes: 'Prefer short styles',
           });
 
-        expect(businessProfileResponse.status).toBe(401);
-        expect(businessProfileResponse.body).toEqual({
-          success: false,
-          error: {
-            code: 'UNAUTHENTICATED',
-            message: 'User context is required.',
-          },
-        });
+        expect(businessProfileResponse.status).toBe(200);
+        expect(businessProfileResponse.body.success).toBe(true);
 
-        expect(analyzeResponse.status).toBe(401);
-        expect(analyzeResponse.body).toEqual({
-          success: false,
-          error: {
-            code: 'UNAUTHENTICATED',
-            message: 'User context is required.',
-          },
-        });
+        expect(analyzeResponse.status).toBe(200);
+        expect(analyzeResponse.body.success).toBe(true);
       }
     );
   });

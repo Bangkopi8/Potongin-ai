@@ -11,6 +11,15 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '12mb' }));
 
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    console.log(`${req.method} ${req.path} ${res.statusCode} ${ms}ms - ${req.ip}`);
+  });
+  next();
+});
+
 app.get('/', (_req, res) => {
   sendSuccess(
     res,

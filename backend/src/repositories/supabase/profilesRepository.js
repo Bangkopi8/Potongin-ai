@@ -33,10 +33,11 @@ function createSupabaseProfilesRepository(options = {}) {
         .maybeSingle();
 
       if (error) {
-        throw new Error(`Failed to load profile from Supabase: ${error.message}`);
+        console.error(`Failed to load profile from Supabase: ${error.message}`);
+        return fallbackRepository.getProfileById(profileId);
       }
 
-      return mapProfileRow(data);
+      return mapProfileRow(data) ?? fallbackRepository.getProfileById(profileId);
     },
 
     async updateProfileCredits(profileId, credits) {
