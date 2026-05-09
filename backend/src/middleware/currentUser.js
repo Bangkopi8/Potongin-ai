@@ -3,18 +3,8 @@ const { sendError } = require('../utils/apiResponse');
 const { attachMockCurrentUser } = require('./mockCurrentUser');
 
 function attachCurrentUser(req, res, next) {
-  if (!env.USE_SUPABASE) {
-    return attachMockCurrentUser(req, res, next);
-  }
-
-  req.currentUser = null;
-  req.authBoundary = {
-    mode: 'supabase-todo',
-    isAuthenticated: false,
-  };
-
-  // TODO: Replace this stub with Supabase JWT verification and current-user lookup.
-  next();
+  // TODO: Replace mock fallback with Supabase JWT verification and current-user lookup.
+  return attachMockCurrentUser(req, res, next);
 }
 
 function requireCurrentUser(req, res, next) {
