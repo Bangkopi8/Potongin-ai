@@ -1,42 +1,51 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { colors, spacing, type } from '../theme.js';
 
 export function ScreenContainer({ eyebrow, title, subtitle, children }) {
   return (
-    <View style={styles.stack}>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>{eyebrow}</Text>
+        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      {children}
-    </View>
+      <View style={styles.stack}>{children}</View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  stack: {
-    gap: 16,
+  scroll: {
+    flex: 1,
+    backgroundColor: colors.bgBase,
+  },
+  content: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: 40,
   },
   header: {
-    gap: 6,
+    gap: spacing.xs,
+    marginBottom: spacing.xxl,
   },
   eyebrow: {
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#c96f4a',
+    ...type.eyebrow,
+    marginBottom: spacing.xs,
   },
   title: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '800',
-    color: '#102a22',
+    ...type.h1,
   },
   subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#56685f',
-    maxWidth: 720,
+    ...type.body,
+    marginTop: spacing.xs,
+    maxWidth: 480,
+  },
+  stack: {
+    gap: spacing.lg,
   },
 });

@@ -6,6 +6,7 @@ import {
   PrimaryButton,
   ScreenContainer,
 } from '../components/index.js';
+import { colors, radius, shadow, spacing, type } from '../theme.js';
 
 export function HomeScreen({
   language = 'en',
@@ -50,8 +51,7 @@ export function HomeScreen({
     riskLow: t('common.lowRisk'),
     riskMedium: t('common.mediumRisk'),
     riskHigh: t('common.highRisk'),
-    descriptionFallback:
-      t('common.curatedDescription'),
+    descriptionFallback: t('common.curatedDescription'),
   };
 
   return (
@@ -60,35 +60,49 @@ export function HomeScreen({
       title={t('home.title')}
       subtitle={t('home.subtitle')}
     >
-      <Card accent="amber">
-        <Text style={styles.kicker}>{t('home.creditsTitle')}</Text>
-        <Text style={styles.heroValue}>{freeCredits}</Text>
-        <Text style={styles.bodyText}>
-          {t('home.creditsBody')}
-        </Text>
-        <PrimaryButton label={t('home.tryAiButton')} onPress={onTryAi} />
+      {/* Hero credit banner */}
+      <View style={styles.heroBanner}>
+        <View style={styles.heroLeft}>
+          <Text style={styles.heroKicker}>{t('home.creditsTitle')}</Text>
+          <Text style={styles.heroCredits}>{freeCredits}</Text>
+          <Text style={styles.heroSub}>{t('home.creditsBody')}</Text>
+        </View>
+        <View style={styles.heroRight}>
+          <PrimaryButton label={t('home.tryAiButton')} onPress={onTryAi} />
+        </View>
+      </View>
+
+      {/* Custom lab card */}
+      <Card>
+        <View style={styles.labRow}>
+          <View style={styles.labText}>
+            <Text style={styles.cardTitle}>{t('home.customTitle')}</Text>
+            <Text style={styles.bodyText}>{t('home.customBody')}</Text>
+          </View>
+          <PrimaryButton
+            label={t('home.customButton')}
+            onPress={onOpenCustomLab}
+            variant="secondary"
+          />
+        </View>
       </Card>
 
-      <Card accent="sky">
-        <Text style={styles.cardTitle}>{t('home.customTitle')}</Text>
-        <Text style={styles.bodyText}>
-          {t('home.customBody')}
-        </Text>
-        <PrimaryButton label={t('home.customButton')} onPress={onOpenCustomLab} variant="secondary" />
-      </Card>
-
+      {/* Editorial sections */}
       {sections.map((section) => (
         <View key={section.title} style={styles.sectionBlock}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{getLocalizedHomeSectionTitle(section.title, t)}</Text>
+            <Text style={styles.sectionTitle}>
+              {getLocalizedHomeSectionTitle(section.title, t)}
+            </Text>
             <Text style={styles.sectionCount}>
-              {t('common.picks', { count: Array.isArray(section.items) ? section.items.length : 0 })}
+              {t('common.picks', {
+                count: Array.isArray(section.items) ? section.items.length : 0,
+              })}
             </Text>
           </View>
 
           {(Array.isArray(section.items) ? section.items : []).map((entry) => {
-            const detailLabel =
-              entry.item?.kind === 'tip' ? t('common.viewDetail') : t('common.viewDetail');
+            const detailLabel = t('common.viewDetail');
             const tryLabel =
               entry.item?.kind === 'color'
                 ? t('tryAi.recommendationCard.tryColor')
@@ -115,95 +129,87 @@ export function HomeScreen({
 }
 
 function getLocalizedHomeSectionTitle(title, t) {
-  const normalizedTitle = String(title || '').toLowerCase();
-
-  if (normalizedTitle.includes('continue your look')) {
-    return t('home.sections.continueYourLook');
-  }
-
-  if (normalizedTitle.includes('trending in indonesia')) {
-    return t('home.sections.trendingIndonesia');
-  }
-
-  if (normalizedTitle.includes('trending globally')) {
-    return t('home.sections.trendingGlobal');
-  }
-
-  if (normalizedTitle.includes('popular men')) {
-    return t('home.sections.popularMens');
-  }
-
-  if (normalizedTitle.includes('popular women')) {
-    return t('home.sections.popularWomens');
-  }
-
-  if (normalizedTitle.includes('hair color ideas')) {
-    return t('home.sections.hairColors');
-  }
-
-  if (normalizedTitle.includes('low maintenance')) {
-    return t('home.sections.lowMaintenance');
-  }
-
-  if (normalizedTitle.includes('professional looks')) {
-    return t('home.sections.professional');
-  }
-
-  if (normalizedTitle.includes('bold transformations')) {
-    return t('home.sections.bold');
-  }
-
-  if (normalizedTitle.includes('korean/japanese')) {
-    return t('home.sections.koreanJapanese');
-  }
-
-  if (normalizedTitle.includes('barber tips')) {
-    return t('home.sections.barberTips');
-  }
-
+  const n = String(title || '').toLowerCase();
+  if (n.includes('continue your look')) return t('home.sections.continueYourLook');
+  if (n.includes('trending in indonesia')) return t('home.sections.trendingIndonesia');
+  if (n.includes('trending globally')) return t('home.sections.trendingGlobal');
+  if (n.includes('popular men')) return t('home.sections.popularMens');
+  if (n.includes('popular women')) return t('home.sections.popularWomens');
+  if (n.includes('hair color ideas')) return t('home.sections.hairColors');
+  if (n.includes('low maintenance')) return t('home.sections.lowMaintenance');
+  if (n.includes('professional looks')) return t('home.sections.professional');
+  if (n.includes('bold transformations')) return t('home.sections.bold');
+  if (n.includes('korean/japanese')) return t('home.sections.koreanJapanese');
+  if (n.includes('barber tips')) return t('home.sections.barberTips');
   return title;
 }
 
 const styles = StyleSheet.create({
-  kicker: {
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    color: '#b45b31',
+  heroBanner: {
+    backgroundColor: colors.forest,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+    flexWrap: 'wrap',
+    ...shadow.cardStrong,
   },
-  heroValue: {
-    fontSize: 44,
-    fontWeight: '900',
-    color: '#102a22',
+  heroLeft: {
+    gap: spacing.xs,
+    flex: 1,
+    minWidth: 120,
+  },
+  heroKicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.65)',
+  },
+  heroCredits: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#ffffff',
+    lineHeight: 54,
+  },
+  heroSub: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: 'rgba(255,255,255,0.75)',
+  },
+  heroRight: {
+    minWidth: 140,
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#102a22',
+    ...type.h3,
   },
   bodyText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#46594f',
+    ...type.body,
+  },
+  labRow: {
+    gap: spacing.md,
+  },
+  labText: {
+    gap: spacing.xs,
   },
   sectionBlock: {
-    gap: 12,
+    gap: spacing.md,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    gap: 12,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#102a22',
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.textPrimary,
   },
   sectionCount: {
-    fontSize: 13,
-    color: '#7a6652',
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
   },
 });

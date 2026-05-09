@@ -20,7 +20,9 @@ import {
   ScreenContainer,
   StatusNotice,
 } from '../components/index.js';
+import { haircutStyles } from '../data/haircutStyles.js';
 import { hairColors } from '../data/hairColors.js';
+import { colors, radius, shadow, spacing, type } from '../theme.js';
 import { localizeCustomerText, localizeMetadataValue } from '../utils/localizeCustomerCopy.js';
 
 function getPreviewImageSource(generateResult, preview) {
@@ -206,6 +208,25 @@ function buildGuidedRecommendationSlots(groups, fallbackGroups, t) {
   });
 }
 
+function pickSuggestedStyles(catalog, currentStyleId, analysisResult) {
+  const safeStyles = Array.isArray(catalog) ? catalog.filter(Boolean) : [];
+  const faceShape = String(analysisResult?.result?.faceShape || '').toLowerCase().trim();
+
+  let candidates = safeStyles.filter((s) => s.id !== currentStyleId);
+
+  if (faceShape) {
+    const matching = candidates.filter((s) =>
+      Array.isArray(s.faceShapesFit) && s.faceShapesFit.some((f) => f.toLowerCase() === faceShape)
+    );
+    const rest = candidates.filter((s) =>
+      !Array.isArray(s.faceShapesFit) || !s.faceShapesFit.some((f) => f.toLowerCase() === faceShape)
+    );
+    candidates = [...matching, ...rest];
+  }
+
+  return candidates.slice(0, 10);
+}
+
 function getRiskLabel(riskLevel, language) {
   return localizeMetadataValue(
     riskLevel === 'high' ? 'bold' : riskLevel === 'low' ? 'light' : 'balanced',
@@ -246,12 +267,16 @@ function getLocalizedMaintenanceLabel(level, t) {
   return t('common.mediumMaintenance');
 }
 
-function FlowStep({ step, title, description }) {
+function FlowStep({ stepNumber, title, description }) {
   return (
     <View style={styles.stepHeader}>
-      <Text style={styles.stepEyebrow}>{step}</Text>
-      <Text style={styles.stepTitle}>{title}</Text>
-      {description ? <Text style={styles.stepDescription}>{description}</Text> : null}
+      <View style={styles.stepPill}>
+        <Text style={styles.stepPillText}>{stepNumber}</Text>
+      </View>
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>{title}</Text>
+        {description ? <Text style={styles.stepDescription}>{description}</Text> : null}
+      </View>
     </View>
   );
 }
@@ -269,7 +294,7 @@ function AnalysisOverlay({ visible, t }) {
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlayBackdrop}>
         <View style={styles.overlayCard}>
-          <ActivityIndicator size="large" color="#1b4332" />
+          <ActivityIndicator size="large" color={colors.forest} />
           <Text style={styles.overlayTitle}>{t('tryAi.analyze.overlayTitle')}</Text>
           <Text style={styles.overlayBody}>{t('tryAi.analyze.overlayMessage')}</Text>
         </View>
@@ -278,15 +303,9 @@ function AnalysisOverlay({ visible, t }) {
   );
 }
 
-function PhotoSourceStepCard({
-  t,
-  status,
-  onTakePhoto,
-  onUploadFromGallery,
-  isBusy,
-}) {
+function PhotoSourceStepCard({ t, status, onTakePhoto, onUploadFromGallery, isBusy }) {
   return (
-    <Card accent="rose">
+    <Card>
       <Text style={styles.cardTitle}>{t('tryAi.photo.sourceOnlyTitle')}</Text>
       <Text style={styles.bodyText}>{t('tryAi.photo.sourceOnlyBody')}</Text>
       {status ? (
@@ -321,7 +340,7 @@ function PhotoReviewCard({
   primaryDisabled = false,
 }) {
   return (
-    <Card accent="sky">
+    <Card>
       <Text style={styles.cardTitle}>{title}</Text>
       <Text style={styles.bodyText}>{body}</Text>
       {status ? <StatusNotice tone={status.tone} title={status.title} message={status.message} /> : null}
@@ -338,7 +357,7 @@ function PhotoReviewCard({
 
 function ConfirmedPhotoCard({ t, selectedPhoto, onResetPhoto }) {
   return (
-    <Card accent="mint">
+    <Card>
       <Text style={styles.cardTitle}>{t('tryAi.photo.confirmedTitle')}</Text>
       <Text style={styles.bodyText}>{t('tryAi.photo.status.confirmedMessage')}</Text>
       <View style={styles.confirmedPhotoRow}>
@@ -364,7 +383,7 @@ function ConfirmedPhotoCard({ t, selectedPhoto, onResetPhoto }) {
 function ColorChip({ color, active, onPress }) {
   return (
     <Pressable onPress={onPress} style={[styles.colorChip, active && styles.colorChipActive]}>
-      <View style={[styles.colorSwatch, { backgroundColor: color?.hex || '#d7b998' }]} />
+      <View style={[styles.colorSwatch, { backgroundColor: color?.hex || '#d7b998' }, active && styles.colorSwatchActive]} />
       <Text style={[styles.colorChipLabel, active && styles.colorChipLabelActive]}>
         {color?.name || 'Color'}
       </Text>
@@ -440,7 +459,7 @@ function GuidedRecommendationRail({
 }) {
   return (
     <View style={styles.groupStack}>
-      <Card accent="amber" style={highlighted ? styles.focusCard : null}>
+      <Card style={highlighted ? styles.focusCard : null}>
         <Text style={styles.cardTitle}>{t('tryAi.groups.guidedTitle')}</Text>
         <Text style={styles.bodyText}>{t('tryAi.groups.guidedBody')}</Text>
         {highlighted ? (
@@ -465,6 +484,66 @@ function GuidedRecommendationRail({
             item={slot.item}
             selectedStyleId={selectedStyleId}
             onTryLook={onTryLook}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+function StyleSuggestionCard({ language, t, item, onTry }) {
+  const categoryLabel = localizeMetadataValue(
+    item?.categories?.[0] || item?.category || '',
+    language,
+    t('tryAi.recommendationCard.categoryFallback')
+  );
+  const lengthLabel = getLocalizedLengthLabel(item?.length || 'medium', t);
+  const initial = String(item?.name || '').charAt(0).toUpperCase();
+
+  return (
+    <View style={styles.suggestionCard}>
+      <View style={styles.suggestionVisual}>
+        <Text style={styles.suggestionInitial}>{initial}</Text>
+      </View>
+      <Text style={styles.suggestionName} numberOfLines={2}>{item?.name}</Text>
+      <View style={styles.suggestionBadgeRow}>
+        <BadgePill tone="amber" label={categoryLabel} />
+        <BadgePill tone="mint" label={lengthLabel} />
+      </View>
+      <PrimaryButton
+        label={t('tryAi.suggestionRail.tryButton')}
+        onPress={() => item && onTry?.(item)}
+      />
+    </View>
+  );
+}
+
+function StyleSuggestionRail({ language, t, catalog, currentStyleId, analysisResult, onTryRecommendation }) {
+  const suggestions = useMemo(
+    () => pickSuggestedStyles(catalog, currentStyleId, analysisResult),
+    [catalog, currentStyleId, analysisResult]
+  );
+
+  if (suggestions.length === 0) return null;
+
+  return (
+    <View style={styles.groupStack}>
+      <Card>
+        <Text style={styles.cardTitle}>{t('tryAi.suggestionRail.title')}</Text>
+        <Text style={styles.bodyText}>{t('tryAi.suggestionRail.body')}</Text>
+      </Card>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.suggestionRail}
+      >
+        {suggestions.map((item) => (
+          <StyleSuggestionCard
+            key={item.id}
+            language={language}
+            t={t}
+            item={item}
+            onTry={onTryRecommendation}
           />
         ))}
       </ScrollView>
@@ -507,7 +586,7 @@ function SelectedLookCard({
       });
 
   return (
-    <Card accent="rose">
+    <Card>
       <Text style={styles.cardTitle}>{t('tryAi.selectedLook.title')}</Text>
       <Text style={styles.resultHeadline}>{selectedStyleName}</Text>
       <View style={styles.badgeRow}>
@@ -537,17 +616,11 @@ function SelectedLookCard({
   );
 }
 
-function HairColorPicker({
-  t,
-  selectedHairColor,
-  onSelectHairColor,
-  hasGeneratedPreview,
-  highlighted = false,
-}) {
+function HairColorPicker({ t, selectedHairColor, onSelectHairColor, hasGeneratedPreview, highlighted = false }) {
   const safeColors = Array.isArray(hairColors) ? hairColors.filter(Boolean) : [];
 
   return (
-    <Card accent="sky" style={highlighted ? styles.focusCard : null}>
+    <Card style={highlighted ? styles.focusCard : null}>
       <Text style={styles.cardTitle}>
         {hasGeneratedPreview ? t('tryAi.colorPicker.changeTitle') : t('tryAi.colorPicker.chooseTitle')}
       </Text>
@@ -585,37 +658,35 @@ function AnalysisSnapshotCard({ language = 'en', t, analysisResult }) {
     return null;
   }
 
+  const faceShape = localizeMetadataValue(
+    analysisResult?.result?.faceShape || t('tryAi.colorPicker.none'),
+    language,
+    t('tryAi.colorPicker.none')
+  );
+  const hairCondition = localizeMetadataValue(
+    analysisResult?.result?.hairCondition || analysisResult?.result?.hairType || t('tryAi.colorPicker.none'),
+    language,
+    t('tryAi.colorPicker.none')
+  );
+  const confidence = typeof analysisResult?.result?.confidence === 'number'
+    ? `${(analysisResult.result.confidence * 100).toFixed(0)}%`
+    : t('tryAi.colorPicker.none');
+
   return (
-    <Card accent="mint">
+    <Card>
       <Text style={styles.cardTitle}>{t('tryAi.insight.title')}</Text>
-      <View style={styles.insightGrid}>
+      <View style={styles.insightRow}>
         <View style={styles.insightItem}>
           <Text style={styles.insightLabel}>{t('tryAi.insight.faceShape')}</Text>
-          <Text style={styles.insightValue}>
-            {localizeMetadataValue(
-              analysisResult?.result?.faceShape || t('tryAi.colorPicker.none'),
-              language,
-              t('tryAi.colorPicker.none')
-            )}
-          </Text>
+          <Text style={styles.insightValue}>{faceShape}</Text>
         </View>
-        <View style={styles.insightItem}>
+        <View style={[styles.insightItem, styles.insightItemBorder]}>
           <Text style={styles.insightLabel}>{t('tryAi.insight.hairCondition')}</Text>
-          <Text style={styles.insightValue}>
-            {localizeMetadataValue(
-              analysisResult?.result?.hairCondition || analysisResult?.result?.hairType || t('tryAi.colorPicker.none'),
-              language,
-              t('tryAi.colorPicker.none')
-            )}
-          </Text>
+          <Text style={styles.insightValue}>{hairCondition}</Text>
         </View>
-        <View style={styles.insightItem}>
+        <View style={[styles.insightItem, styles.insightItemBorder]}>
           <Text style={styles.insightLabel}>{t('tryAi.insight.confidence')}</Text>
-          <Text style={styles.insightValue}>
-            {typeof analysisResult?.result?.confidence === 'number'
-              ? `${(analysisResult.result.confidence * 100).toFixed(0)}%`
-              : t('tryAi.colorPicker.none')}
-          </Text>
+          <Text style={styles.insightValue}>{confidence}</Text>
         </View>
       </View>
     </Card>
@@ -644,7 +715,7 @@ function PreviewResultCard({
 
   if (generateStatus === 'idle' && !generateResult && !generateError) {
     return (
-      <Card accent="sky">
+      <Card>
         <Text style={styles.cardTitle}>{t('tryAi.preview.resultTitle')}</Text>
         <EmptyState title={t('tryAi.preview.emptyTitle')} message={t('tryAi.preview.emptyMessage')} />
       </Card>
@@ -653,7 +724,7 @@ function PreviewResultCard({
 
   if (generateStatus === 'loading') {
     return (
-      <Card accent="sky">
+      <Card>
         <Text style={styles.cardTitle}>{t('tryAi.preview.resultTitle')}</Text>
         <LoadingState message={t('tryAi.preview.loadingMessage')} />
       </Card>
@@ -662,7 +733,7 @@ function PreviewResultCard({
 
   if (generateStatus === 'error') {
     return (
-      <Card accent="sky">
+      <Card>
         <Text style={styles.cardTitle}>{t('tryAi.preview.resultTitle')}</Text>
         <ErrorState
           title={t('tryAi.preview.errorTitle')}
@@ -673,7 +744,7 @@ function PreviewResultCard({
   }
 
   return (
-    <Card accent="sky">
+    <Card>
       <Text style={styles.cardTitle}>{t('tryAi.preview.resultTitle')}</Text>
       <StatusNotice
         tone="success"
@@ -727,7 +798,7 @@ function ResultDecisionCard({
   const normalizedSaveMessage = getSaveFeedbackMessage(saveMessage, t);
 
   return (
-    <Card accent="mint">
+    <Card>
       <Text style={styles.cardTitle}>{t('tryAi.resultDecision.title')}</Text>
       <View style={styles.buttonStack}>
         <PrimaryButton
@@ -819,7 +890,7 @@ function BarberInstructionCard({
 
   if (!hasGeneratedPreview) {
     return (
-      <Card accent="rose">
+      <Card>
         <Text style={styles.cardTitle}>{t('tryAi.barberCard.title')}</Text>
         <Text style={styles.bodyText}>{t('tryAi.barberCard.lockedBody')}</Text>
         <PrimaryButton
@@ -834,7 +905,7 @@ function BarberInstructionCard({
 
   if (!isExpanded) {
     return (
-      <Card accent="rose">
+      <Card>
         <Text style={styles.cardTitle}>{t('tryAi.barberCard.title')}</Text>
         <Text style={styles.bodyText}>{t('tryAi.barberCard.showToBarber')}</Text>
         <Text style={styles.metaText}>
@@ -849,7 +920,7 @@ function BarberInstructionCard({
   }
 
   return (
-    <Card accent="rose">
+    <Card>
       <Text style={styles.cardTitle}>{t('tryAi.barberCard.instructionTitle')}</Text>
       <StatusNotice
         tone="info"
@@ -994,7 +1065,6 @@ export function TryAiScreen({
     }
   }, [generateResult, generateStatus]);
 
-  const stepLabelPrefix = language === 'id' ? 'Langkah' : 'Step';
   const safeRecommendationGroups = (Array.isArray(recommendationGroups) ? recommendationGroups.filter(Boolean) : []).map((group) => ({
     ...group,
     title: getLocalizedGroupTitle(group, t),
@@ -1152,11 +1222,7 @@ export function TryAiScreen({
     <ScreenContainer eyebrow={t('tryAi.eyebrow')} title={t('tryAi.title')} subtitle={t('tryAi.subtitle')}>
       <AnalysisOverlay visible={analysisStatus === 'loading'} t={t} />
 
-      <FlowStep
-        step={`${stepLabelPrefix} 1`}
-        title={t('tryAi.steps.addPhoto.title')}
-        description={t('tryAi.steps.addPhoto.description')}
-      />
+      <FlowStep stepNumber={1} title={t('tryAi.steps.addPhoto.title')} description={t('tryAi.steps.addPhoto.description')} />
 
       {showPhotoSource ? (
         <PhotoSourceStepCard
@@ -1170,11 +1236,7 @@ export function TryAiScreen({
 
       {showFramingStep ? (
         <>
-          <FlowStep
-            step={`${stepLabelPrefix} 2`}
-            title={t('tryAi.photo.reviewTitle')}
-            description={t('tryAi.photo.reviewBody')}
-          />
+          <FlowStep stepNumber={2} title={t('tryAi.photo.reviewTitle')} description={t('tryAi.photo.reviewBody')} />
           <PhotoReviewCard
             title={t('tryAi.photo.reviewTitle')}
             body={t('tryAi.photo.reviewBody')}
@@ -1189,11 +1251,7 @@ export function TryAiScreen({
 
       {showConfirmStep ? (
         <>
-          <FlowStep
-            step={`${stepLabelPrefix} 3`}
-            title={t('tryAi.photo.confirmStepTitle')}
-            description={t('tryAi.photo.confirmStepBody')}
-          />
+          <FlowStep stepNumber={3} title={t('tryAi.photo.confirmStepTitle')} description={t('tryAi.photo.confirmStepBody')} />
           <PhotoReviewCard
             title={t('tryAi.photo.confirmStepTitle')}
             body={t('tryAi.photo.confirmStepBody')}
@@ -1210,13 +1268,9 @@ export function TryAiScreen({
 
       {showAnalyzeStep ? (
         <>
-          <FlowStep
-            step={`${stepLabelPrefix} 4`}
-            title={t('tryAi.steps.analyze.title')}
-            description={t('tryAi.steps.analyze.description')}
-          />
+          <FlowStep stepNumber={4} title={t('tryAi.steps.analyze.title')} description={t('tryAi.steps.analyze.description')} />
           <ConfirmedPhotoCard t={t} selectedPhoto={selectedPhoto} onResetPhoto={onResetPhoto} />
-          <Card accent="mint">
+          <Card>
             <Text style={styles.cardTitle}>{t('tryAi.analyze.cardTitle')}</Text>
             <Text style={styles.bodyText}>{t('tryAi.analyze.body')}</Text>
             <StatusNotice
@@ -1235,11 +1289,7 @@ export function TryAiScreen({
 
       {showRecommendations ? (
         <>
-          <FlowStep
-            step={`${stepLabelPrefix} 5`}
-            title={t('tryAi.steps.chooseStyle.title')}
-            description={t('tryAi.steps.chooseStyle.description')}
-          />
+          <FlowStep stepNumber={5} title={t('tryAi.steps.chooseStyle.title')} description={t('tryAi.steps.chooseStyle.description')} />
           <AnalysisSnapshotCard language={language} t={t} analysisResult={analysisResult} />
           <GuidedRecommendationRail
             language={language}
@@ -1254,11 +1304,7 @@ export function TryAiScreen({
 
       {showSelectionStep ? (
         <>
-          <FlowStep
-            step={`${stepLabelPrefix} 6`}
-            title={t('tryAi.colorPicker.chooseTitle')}
-            description={t('tryAi.colorPicker.body')}
-          />
+          <FlowStep stepNumber={6} title={t('tryAi.colorPicker.chooseTitle')} description={t('tryAi.colorPicker.body')} />
           <HairColorPicker
             t={t}
             selectedHairColor={selectedHairColor}
@@ -1266,11 +1312,7 @@ export function TryAiScreen({
             hasGeneratedPreview={hasGeneratedPreview}
             highlighted={focusTarget === 'color'}
           />
-          <FlowStep
-            step={`${stepLabelPrefix} 7`}
-            title={t('tryAi.steps.generate.title')}
-            description={t('tryAi.steps.generate.description')}
-          />
+          <FlowStep stepNumber={7} title={t('tryAi.steps.generate.title')} description={t('tryAi.steps.generate.description')} />
           <SelectedLookCard
             t={t}
             selectedStyle={selectedStyle}
@@ -1287,11 +1329,7 @@ export function TryAiScreen({
 
       {showPreviewStep ? (
         <>
-          <FlowStep
-            step={`${stepLabelPrefix} 8`}
-            title={t('tryAi.preview.resultTitle')}
-            description={t('tryAi.preview.emptyMessage')}
-          />
+          <FlowStep stepNumber={8} title={t('tryAi.preview.resultTitle')} description={t('tryAi.preview.emptyMessage')} />
           <PreviewResultCard
             t={t}
             generateStatus={generateStatus}
@@ -1304,21 +1342,31 @@ export function TryAiScreen({
             onChangeComparisonView={setComparisonView}
           />
           {hasGeneratedPreview ? (
-            <ResultDecisionCard
-              t={t}
-              canSaveResult={canSaveResult}
-              onSaveResult={onSaveResult}
-              onTryAnotherColor={handleFocusColor}
-              onTryAnotherStyle={handleFocusStyle}
-              onOpenProfile={onOpenProfile}
-              saveMessage={saveMessage}
-            />
+            <>
+              <ResultDecisionCard
+                t={t}
+                canSaveResult={canSaveResult}
+                onSaveResult={onSaveResult}
+                onTryAnotherColor={handleFocusColor}
+                onTryAnotherStyle={handleFocusStyle}
+                onOpenProfile={onOpenProfile}
+                saveMessage={saveMessage}
+              />
+              <StyleSuggestionRail
+                language={language}
+                t={t}
+                catalog={haircutStyles}
+                currentStyleId={selectedStyleId}
+                analysisResult={analysisResult}
+                onTryRecommendation={handleTryRecommendation}
+              />
+            </>
           ) : null}
         </>
       ) : null}
 
       {showPaywallPlaceholder || hasInsufficientCredits ? (
-        <Card accent="amber">
+        <Card>
           <Text style={styles.cardTitle}>{t('tryAi.status.noRealCreditsTitle')}</Text>
           <Text style={styles.bodyText}>{t('tryAi.status.noRealCreditsMessage')}</Text>
         </Card>
@@ -1345,342 +1393,402 @@ export function TryAiScreen({
 
 const styles = StyleSheet.create({
   stepHeader: {
-    gap: 4,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
-  stepEyebrow: {
-    textTransform: 'uppercase',
-    letterSpacing: 1.4,
-    fontSize: 11,
+  stepPill: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.full,
+    backgroundColor: colors.forest,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  stepPillText: {
+    fontSize: 12,
     fontWeight: '800',
-    color: '#c96f4a',
+    color: '#ffffff',
+  },
+  stepContent: {
+    flex: 1,
+    gap: 3,
   },
   stepTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#102a22',
+    color: colors.textPrimary,
+    lineHeight: 26,
   },
   stepDescription: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#56685f',
+    color: colors.textTertiary,
   },
   cardTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#102a22',
+    color: colors.textPrimary,
   },
   bodyText: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#46594f',
+    color: colors.textSecondary,
   },
   metaText: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#7a6652',
+    color: colors.textTertiary,
   },
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: spacing.sm,
   },
   resultHeadline: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#132f26',
-  },
-  bulletLine: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: '#42564d',
+    color: colors.textPrimary,
   },
   buttonStack: {
-    gap: 10,
+    gap: spacing.sm,
   },
   focusCard: {
-    borderWidth: 1,
-    borderColor: '#1b4332',
+    borderWidth: 2,
+    borderColor: colors.forest,
   },
   photoReviewFrame: {
-    borderRadius: 20,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#eadac3',
-    backgroundColor: '#f8f3eb',
-    padding: 12,
+    borderColor: colors.border,
+    backgroundColor: colors.bgSubtle,
   },
   photoReviewImage: {
     width: '100%',
-    height: 300,
-    borderRadius: 16,
-    backgroundColor: '#eadac3',
+    height: 360,
+    backgroundColor: colors.bgMuted,
   },
   confirmedPhotoRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     alignItems: 'center',
     flexWrap: 'wrap',
   },
   confirmedPhotoImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 18,
-    backgroundColor: '#eadac3',
+    width: 112,
+    height: 112,
+    borderRadius: radius.lg,
+    backgroundColor: colors.bgMuted,
   },
   confirmedPhotoCopy: {
     flex: 1,
-    minWidth: 180,
-    gap: 8,
+    minWidth: 160,
+    gap: spacing.sm,
   },
   overlayBackdrop: {
     flex: 1,
-    backgroundColor: '#102a22aa',
+    backgroundColor: 'rgba(15, 40, 32, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
   overlayCard: {
     width: '100%',
     maxWidth: 340,
-    borderRadius: 24,
-    backgroundColor: '#fffaf3',
-    paddingHorizontal: 24,
-    paddingVertical: 28,
+    borderRadius: radius.xl,
+    backgroundColor: colors.bgCard,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxl,
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
+    ...shadow.cardStrong,
   },
   overlayTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#102a22',
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   overlayBody: {
     fontSize: 14,
     lineHeight: 21,
-    color: '#56685f',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
-  insightGrid: {
-    gap: 10,
+  insightRow: {
+    flexDirection: 'row',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
   insightItem: {
-    borderRadius: 16,
-    backgroundColor: '#fffaf3',
-    borderWidth: 1,
-    borderColor: '#d7e9dd',
-    padding: 12,
+    flex: 1,
+    padding: spacing.md,
     gap: 4,
+    backgroundColor: colors.bgSubtle,
+  },
+  insightItemBorder: {
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
   },
   insightLabel: {
-    fontSize: 12,
-    lineHeight: 17,
-    color: '#5f6f65',
+    fontSize: 11,
     fontWeight: '700',
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   insightValue: {
     fontSize: 15,
-    lineHeight: 21,
-    color: '#14342b',
     fontWeight: '800',
+    color: colors.textPrimary,
   },
   groupStack: {
-    gap: 12,
+    gap: spacing.md,
   },
   recommendationRail: {
-    gap: 12,
-    paddingRight: 20,
+    gap: spacing.md,
+    paddingRight: spacing.xl,
   },
   recommendationCard: {
-    width: 284,
-    backgroundColor: '#fffaf3',
-    borderRadius: 20,
-    padding: 14,
-    gap: 10,
+    width: 300,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    gap: spacing.md,
     borderWidth: 1,
-    borderColor: '#eadac3',
+    borderColor: colors.border,
+    ...shadow.card,
   },
   recommendationCardSelected: {
-    borderColor: '#1b4332',
-    backgroundColor: '#f3fbf6',
+    borderColor: colors.forest,
+    borderWidth: 2,
+    backgroundColor: colors.mintBg,
   },
   recommendationVisual: {
-    minHeight: 132,
-    borderRadius: 18,
-    backgroundColor: '#f4efe6',
+    minHeight: 120,
+    borderRadius: radius.lg,
+    backgroundColor: colors.bgSubtle,
     borderWidth: 1,
-    borderColor: '#eadac3',
-    padding: 14,
+    borderColor: colors.border,
+    padding: spacing.md,
     justifyContent: 'space-between',
-    gap: 8,
+    gap: spacing.sm,
   },
   recommendationVisualText: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#56685f',
-    fontWeight: '700',
+    color: colors.textTertiary,
+    fontWeight: '600',
   },
   recommendationTitle: {
     fontSize: 17,
     lineHeight: 23,
     fontWeight: '800',
-    color: '#102a22',
+    color: colors.textPrimary,
   },
   recommendationDescription: {
     fontSize: 14,
     lineHeight: 21,
-    color: '#46594f',
+    color: colors.textSecondary,
+  },
+  suggestionRail: {
+    gap: spacing.md,
+    paddingRight: spacing.xl,
+  },
+  suggestionCard: {
+    width: 200,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
+  },
+  suggestionVisual: {
+    height: 80,
+    borderRadius: radius.lg,
+    backgroundColor: colors.bgSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionInitial: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.forestMid,
+  },
+  suggestionName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    lineHeight: 21,
+  },
+  suggestionBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
   },
   colorChipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   colorChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#b9ccf3',
-    backgroundColor: '#fffaf3',
+    borderRadius: radius.full,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
   },
   colorChipActive: {
-    borderColor: '#1b4332',
-    backgroundColor: '#1b4332',
+    borderColor: colors.forest,
+    borderWidth: 2,
+    backgroundColor: colors.bgCard,
   },
   colorChipLabel: {
     fontSize: 13,
-    lineHeight: 18,
     fontWeight: '700',
-    color: '#375147',
+    color: colors.textSecondary,
   },
   colorChipLabelActive: {
-    color: '#fffaf3',
+    color: colors.forest,
   },
   colorSwatch: {
-    width: 14,
-    height: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#ffffff66',
+    width: 18,
+    height: 18,
+    borderRadius: radius.full,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  colorSwatchActive: {
+    borderWidth: 2.5,
+    borderColor: colors.forest,
   },
   previewCard: {
-    backgroundColor: '#f8f3eb',
-    borderRadius: 18,
-    padding: 14,
-    gap: 8,
+    backgroundColor: colors.bgSubtle,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.sm,
     borderWidth: 1,
-    borderColor: '#eadac3',
+    borderColor: colors.border,
   },
   compareTabRow: {
     flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: spacing.sm,
+    backgroundColor: colors.bgMuted,
+    borderRadius: radius.full,
+    padding: 4,
   },
   compareTabButton: {
-    flexGrow: 1,
-    minWidth: 110,
-    paddingHorizontal: 14,
+    flex: 1,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#f1e8da',
-    borderWidth: 1,
-    borderColor: '#dfd0bd',
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   compareTabButtonActive: {
-    backgroundColor: '#14342b',
-    borderColor: '#14342b',
+    backgroundColor: colors.bgCard,
+    ...shadow.card,
   },
   compareTabLabel: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#42594f',
+    fontWeight: '700',
+    color: colors.textTertiary,
   },
   compareTabLabelActive: {
-    color: '#fffaf3',
+    color: colors.textPrimary,
+    fontWeight: '800',
   },
   previewTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#102a22',
+    color: colors.textPrimary,
   },
   previewMeta: {
     fontSize: 13,
-    lineHeight: 18,
-    color: '#6b7280',
+    color: colors.textTertiary,
   },
   previewMissingText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#8b4b3b',
+    color: colors.error,
   },
   previewImage: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 16,
-    backgroundColor: '#eadac3',
+    borderRadius: radius.md,
+    backgroundColor: colors.bgMuted,
   },
   barberMetaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
   barberMetaCard: {
     flexGrow: 1,
     minWidth: 130,
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#eadac3',
-    backgroundColor: '#fffaf3',
-    padding: 12,
+    borderColor: colors.border,
+    backgroundColor: colors.bgSubtle,
+    padding: spacing.md,
     gap: 4,
   },
   barberSection: {
-    gap: 6,
+    gap: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
   },
   instructionTitle: {
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#102a22',
+    color: colors.textPrimary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   barberReferenceRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
   barberReferenceCard: {
     flexGrow: 1,
     minWidth: 130,
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#eadac3',
-    backgroundColor: '#fffaf3',
-    padding: 10,
-    gap: 8,
+    borderColor: colors.border,
+    backgroundColor: colors.bgSubtle,
+    padding: spacing.sm,
+    gap: spacing.sm,
   },
   barberReferenceImage: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 14,
-    backgroundColor: '#eadac3',
+    borderRadius: radius.sm,
+    backgroundColor: colors.bgMuted,
   },
   betaDisclaimer: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#6b7280',
-  },
-  saveRow: {
-    gap: 10,
+    color: colors.textMuted,
   },
   saveMessage: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#46594f',
+    color: colors.success,
     fontWeight: '700',
   },
 });

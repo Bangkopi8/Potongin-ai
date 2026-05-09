@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { colors, radius, spacing } from '../theme.js';
+
 export function StatusNotice({ tone = 'info', title, message }) {
   return (
     <View
@@ -10,68 +12,66 @@ export function StatusNotice({ tone = 'info', title, message }) {
         tone === 'error' && styles.error,
       ]}
     >
-      <Text
-        style={[
-          styles.title,
-          tone === 'success' && styles.successText,
-          tone === 'warning' && styles.warningText,
-          tone === 'error' && styles.errorText,
-        ]}
-      >
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.message,
-          tone === 'success' && styles.successText,
-          tone === 'warning' && styles.warningText,
-          tone === 'error' && styles.errorText,
-        ]}
-      >
-        {message}
-      </Text>
+      {title ? (
+        <Text
+          style={[
+            styles.title,
+            tone === 'success' && styles.successText,
+            tone === 'warning' && styles.warningText,
+            tone === 'error' && styles.errorText,
+          ]}
+        >
+          {title}
+        </Text>
+      ) : null}
+      {message ? (
+        <Text
+          style={[
+            styles.message,
+            tone === 'success' && styles.successText,
+            tone === 'warning' && styles.warningText,
+            tone === 'error' && styles.errorText,
+          ]}
+        >
+          {message}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: '#eef6ff',
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: colors.infoBg,
+    borderRadius: radius.md,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
-    gap: 6,
+    borderColor: colors.infoBorder,
+    gap: spacing.xs,
   },
   success: {
-    backgroundColor: '#e7f8ef',
-    borderColor: '#a8e0c0',
+    backgroundColor: colors.successBg,
+    borderColor: colors.successBorder,
   },
   warning: {
-    backgroundColor: '#fff4dd',
-    borderColor: '#f2d38f',
+    backgroundColor: colors.warningBg,
+    borderColor: colors.warningBorder,
   },
   error: {
-    backgroundColor: '#fee2e2',
-    borderColor: '#fecaca',
+    backgroundColor: colors.errorBg,
+    borderColor: colors.errorBorder,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1d4ed8',
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.info,
   },
   message: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#1e3a8a',
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.info,
   },
-  successText: {
-    color: '#166534',
-  },
-  warningText: {
-    color: '#8a5d12',
-  },
-  errorText: {
-    color: '#991b1b',
-  },
+  successText: { color: colors.success },
+  warningText: { color: colors.warning },
+  errorText: { color: colors.error },
 });

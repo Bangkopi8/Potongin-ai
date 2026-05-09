@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { colors, radius } from '../theme.js';
+
 export function BadgePill({ tone = 'default', label }) {
   return (
     <View
@@ -29,39 +31,37 @@ export function BadgePill({ tone = 'default', label }) {
 const styles = StyleSheet.create({
   base: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: '#efe5d8',
+    paddingVertical: 5,
+    borderRadius: radius.full,
+    backgroundColor: colors.bgMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   mint: {
-    backgroundColor: '#ddf4e6',
+    backgroundColor: colors.mintBg,
+    borderColor: colors.successBorder,
   },
   amber: {
-    backgroundColor: '#fff0d0',
+    backgroundColor: colors.amberBg,
+    borderColor: colors.amberBorder,
   },
   rose: {
-    backgroundColor: '#ffe1d8',
+    backgroundColor: colors.roseBg,
+    borderColor: '#fecdd3',
   },
   sky: {
-    backgroundColor: '#e4eefc',
+    backgroundColor: colors.skyBg,
+    borderColor: colors.infoBorder,
   },
   label: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#42564d',
+    fontWeight: '700',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
-  mintText: {
-    color: '#166534',
-  },
-  amberText: {
-    color: '#9a5c15',
-  },
-  roseText: {
-    color: '#a14831',
-  },
-  skyText: {
-    color: '#1e4ea3',
-  },
+  mintText: { color: colors.mintText },
+  amberText: { color: colors.amberText },
+  roseText: { color: colors.roseText },
+  skyText: { color: colors.skyText },
 });

@@ -1,8 +1,14 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
+import { colors, radius, spacing } from '../theme.js';
+
 export function FilterTabs({ filters, activeFilter, onSelectFilter, labelMap = {} }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.row}
+    >
       {filters.map((filter) => {
         const isActive = filter === activeFilter;
         const visibleLabel = labelMap?.[filter] || filter;
@@ -23,24 +29,27 @@ export function FilterTabs({ filters, activeFilter, onSelectFilter, labelMap = {
 
 const styles = StyleSheet.create({
   row: {
-    gap: 8,
+    gap: spacing.sm,
     paddingBottom: 2,
   },
   tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#efe5d8',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 9,
+    borderRadius: radius.full,
+    backgroundColor: colors.bgMuted,
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
   tabActive: {
-    backgroundColor: '#1b4332',
+    backgroundColor: colors.forest,
+    borderColor: colors.forest,
   },
   label: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#42564d',
+    fontWeight: '700',
+    color: colors.textSecondary,
   },
   labelActive: {
-    color: '#fffaf3',
+    color: '#ffffff',
   },
 });

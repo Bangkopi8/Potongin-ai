@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
+import { colors, radius, shadow, spacing } from '../theme.js';
+
 export function Card({ accent = 'default', children, style }) {
   return (
     <View
@@ -19,27 +21,28 @@ export function Card({ accent = 'default', children, style }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fffaf3',
-    borderRadius: 24,
-    padding: 18,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
     borderWidth: 1,
-    borderColor: '#e8dcc9',
-    gap: 12,
+    borderColor: colors.border,
+    gap: spacing.md,
+    ...shadow.card,
   },
   cardAmber: {
-    backgroundColor: '#fff2d6',
-    borderColor: '#f3d39a',
+    backgroundColor: colors.amberLight,
+    borderColor: colors.amberBorder,
   },
   cardMint: {
-    backgroundColor: '#e7f8ef',
-    borderColor: '#a8e0c0',
+    backgroundColor: colors.mintBg,
+    borderColor: colors.successBorder,
   },
   cardRose: {
-    backgroundColor: '#ffe6e0',
-    borderColor: '#efb6a8',
+    backgroundColor: colors.roseBg,
+    borderColor: '#fecdd3',
   },
   cardSky: {
-    backgroundColor: '#e8f2ff',
-    borderColor: '#b7d3ff',
+    backgroundColor: colors.skyBg,
+    borderColor: colors.infoBorder,
   },
 });

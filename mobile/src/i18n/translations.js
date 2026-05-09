@@ -426,6 +426,11 @@ export const translations = {
         comingSoon: 'Segera hadir',
         viewSavedLook: 'Lihat Look Tersimpan',
       },
+      suggestionRail: {
+        title: 'Mau coba gaya lain?',
+        body: 'Pilihan ini cocok dengan bentuk wajah dan vibe kamu. Ketuk Coba Ini untuk membuat preview baru.',
+        tryButton: 'Coba Ini',
+      },
       recommendationCard: {
         fallbackTitle: 'Rekomendasi',
         fallbackReason: 'Pilihan gaya yang disarankan untuk Anda.',
@@ -921,6 +926,11 @@ export const translations = {
         customHaircutStyle: 'Custom Haircut Style',
         comingSoon: 'Coming soon',
         viewSavedLook: 'View Saved Look',
+      },
+      suggestionRail: {
+        title: 'Want to try another style?',
+        body: 'These styles suit your face shape and vibe. Tap Try This to generate a new preview.',
+        tryButton: 'Try This',
       },
       recommendationCard: {
         fallbackTitle: 'Recommendation',

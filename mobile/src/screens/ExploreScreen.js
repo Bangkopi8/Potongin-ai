@@ -2,14 +2,15 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import {
   Card,
+  DiscoveryCard,
   EmptyState,
   ErrorState,
   FilterTabs,
   LoadingState,
   PrimaryButton,
   ScreenContainer,
-  DiscoveryCard,
 } from '../components/index.js';
+import { colors, spacing, type } from '../theme.js';
 
 export function ExploreScreen({
   language = 'en',
@@ -74,48 +75,55 @@ export function ExploreScreen({
       title={t('explore.title')}
       subtitle={t('explore.subtitle')}
     >
-      <Card accent="sky">
-        <View style={styles.inlineHeader}>
-          <Text style={styles.cardTitle}>{t('explore.filtersTitle')}</Text>
-          <PrimaryButton
-            label={t('common.refresh')}
-            onPress={onRefresh}
-            disabled={status === 'loading'}
-            variant="secondary"
-          />
-        </View>
+      {/* Filter bar */}
+      <View style={styles.filterBar}>
         <FilterTabs
           filters={availableFilters}
           activeFilter={activeFilter}
           onSelectFilter={onSelectFilter}
           labelMap={filterLabelMap}
         />
-      </Card>
+        <PrimaryButton
+          label={t('common.refresh')}
+          onPress={onRefresh}
+          disabled={status === 'loading'}
+          variant="secondary"
+        />
+      </View>
 
-      <Card accent="amber">
+      {/* Custom lab promo */}
+      <Card>
         <Text style={styles.cardTitle}>{t('explore.customTitle')}</Text>
-        <Text style={styles.bodyText}>
-          {t('explore.customBody')}
-        </Text>
-        <PrimaryButton label={t('explore.customButton')} onPress={onOpenCustomLab} variant="secondary" />
+        <Text style={styles.bodyText}>{t('explore.customBody')}</Text>
+        <PrimaryButton
+          label={t('explore.customButton')}
+          onPress={onOpenCustomLab}
+          variant="secondary"
+        />
       </Card>
 
+      {/* States */}
       {status === 'loading' && <LoadingState message={t('explore.loading')} />}
       {status === 'error' && (
-        <ErrorState title={t('explore.errorTitle')} message={t('explore.errorMessage', {}, error)} />
-      )}
-      {status === 'success' && filterItems.length === 0 && (
-        <EmptyState
-          title={t('explore.emptyTitle')}
-          message={t('explore.emptyMessage')}
+        <ErrorState
+          title={t('explore.errorTitle')}
+          message={t('explore.errorMessage', {}, error)}
         />
       )}
+      {status === 'success' && filterItems.length === 0 && (
+        <EmptyState title={t('explore.emptyTitle')} message={t('explore.emptyMessage')} />
+      )}
 
-      {status === 'success' ? (
+      {/* Results */}
+      {status === 'success' && filterItems.length > 0 ? (
         <View style={styles.resultsBlock}>
           <View style={styles.resultsHeader}>
-            <Text style={styles.cardTitle}>{filterLabelMap[activeFilter] || activeFilter}</Text>
-            <Text style={styles.resultCount}>{t('common.results', { count: filterItems.length })}</Text>
+            <Text style={styles.resultsTitle}>
+              {filterLabelMap[activeFilter] || activeFilter}
+            </Text>
+            <Text style={styles.resultCount}>
+              {t('common.results', { count: filterItems.length })}
+            </Text>
           </View>
           {filterItems.map((item) => (
             <DiscoveryCard
@@ -134,36 +142,33 @@ export function ExploreScreen({
 }
 
 const styles = StyleSheet.create({
-  inlineHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
+  filterBar: {
+    gap: spacing.sm,
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#102a22',
+    ...type.h3,
   },
   bodyText: {
     fontSize: 15,
-    lineHeight: 22,
-    color: '#46594f',
+    lineHeight: 23,
+    color: colors.textSecondary,
   },
   resultsBlock: {
-    gap: 12,
+    gap: spacing.md,
   },
   resultsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    gap: 12,
-    flexWrap: 'wrap',
+  },
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.textPrimary,
   },
   resultCount: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#7a6652',
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
   },
 });
