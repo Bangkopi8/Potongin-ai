@@ -22,6 +22,7 @@ import {
 } from '../components/index.js';
 import { haircutStyles } from '../data/haircutStyles.js';
 import { hairColors } from '../data/hairColors.js';
+import { usePexelsPhoto } from '../services/pexelsService.js';
 import { colors, radius, shadow, spacing, type } from '../theme.js';
 import { localizeCustomerText, localizeMetadataValue } from '../utils/localizeCustomerCopy.js';
 
@@ -492,6 +493,7 @@ function GuidedRecommendationRail({
 }
 
 function StyleSuggestionCard({ language, t, item, onTry }) {
+  const photoUrl = usePexelsPhoto(item?.name);
   const categoryLabel = localizeMetadataValue(
     item?.categories?.[0] || item?.category || '',
     language,
@@ -502,9 +504,16 @@ function StyleSuggestionCard({ language, t, item, onTry }) {
 
   return (
     <View style={styles.suggestionCard}>
-      <View style={styles.suggestionVisual}>
-        <Text style={styles.suggestionInitial}>{initial}</Text>
-      </View>
+      {photoUrl ? (
+        <View style={styles.suggestionPhotoContainer}>
+          <Image source={{ uri: photoUrl }} style={styles.suggestionPhotoFill} resizeMode="cover" />
+          <View style={styles.suggestionPhotoOverlay} />
+        </View>
+      ) : (
+        <View style={styles.suggestionVisual}>
+          <Text style={styles.suggestionInitial}>{initial}</Text>
+        </View>
+      )}
       <Text style={styles.suggestionName} numberOfLines={2}>{item?.name}</Text>
       <View style={styles.suggestionBadgeRow}>
         <BadgePill tone="amber" label={categoryLabel} />
@@ -1610,8 +1619,31 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadow.card,
   },
+  suggestionPhotoContainer: {
+    height: 110,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.bgMuted,
+  },
+  suggestionPhotoFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  suggestionPhotoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(8, 24, 16, 0.2)',
+  },
   suggestionVisual: {
-    height: 80,
+    height: 110,
     borderRadius: radius.lg,
     backgroundColor: colors.bgSubtle,
     borderWidth: 1,

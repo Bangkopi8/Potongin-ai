@@ -1,8 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { BadgePill } from './BadgePill.js';
 import { Card } from './Card.js';
 import { PrimaryButton } from './PrimaryButton.js';
+import { usePexelsPhoto } from '../services/pexelsService.js';
 import { localizeCustomerText, localizeMetadataValue } from '../utils/localizeCustomerCopy.js';
 
 function getRiskTone(riskLevel) {
@@ -136,6 +137,7 @@ export function DiscoveryCard({
     return null;
   }
 
+  const pexelsPhotoUrl = usePexelsPhoto(item.kind === 'style' ? item.name : null);
   const visualPalette = getVisualPalette(item);
   const language = labels.language || 'en';
   const primaryCategory = getPrimaryCategory(item, labels.categoryFallback || 'Curated', language);
@@ -228,6 +230,27 @@ export function DiscoveryCard({
           <Text style={styles.visualSupportingText}>
             {labels.previewComingSoon || 'Visual preview coming soon'}
           </Text>
+        </View>
+      ) : pexelsPhotoUrl ? (
+        <View style={styles.photoVisualBlock}>
+          <Image source={{ uri: pexelsPhotoUrl }} style={styles.photoFill} resizeMode="cover" />
+          <View style={styles.photoOverlay}>
+            <Text style={styles.photoEyebrow}>
+              {labels.visualPreview || labels.styleVisualFallback || 'Style preview'}
+            </Text>
+            <Text style={styles.photoTitle}>{primaryCategory}</Text>
+            <View style={styles.photoChipRow}>
+              <View style={styles.photoChip}>
+                <Text style={styles.photoChipText}>{localizedGenderFit}</Text>
+              </View>
+              <View style={styles.photoChip}>
+                <Text style={styles.photoChipText}>{localizedLength}</Text>
+              </View>
+              <View style={styles.photoChip}>
+                <Text style={styles.photoChipText}>{localizedMaintenance}</Text>
+              </View>
+            </View>
+          </View>
         </View>
       ) : (
         <View
@@ -352,6 +375,63 @@ export function DiscoveryCard({
 const styles = StyleSheet.create({
   card: {
     gap: 12,
+  },
+  photoVisualBlock: {
+    height: 220,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#d0cac3',
+  },
+  photoFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  photoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingTop: 44,
+    backgroundColor: 'rgba(8, 24, 16, 0.6)',
+    gap: 6,
+  },
+  photoEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  photoTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#ffffff',
+    lineHeight: 26,
+  },
+  photoChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  photoChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  },
+  photoChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   visualBlock: {
     minHeight: 110,
